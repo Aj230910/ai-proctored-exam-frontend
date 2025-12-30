@@ -14,7 +14,7 @@
       justify-content: center;
       align-items: center;
       font-family: "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #0b0b14, #22d3ee);
+      background: linear-gradient(135deg, #8587f2, #22d3ee);
     }
 
     .card {
@@ -94,14 +94,14 @@ async function login() {
   localStorage.setItem("exam_id", examId);
 
   await fetch(
-    `https://ai-proctored-exam-backend.onrender.com/user-login?user_id=${username}&exam_id=${examId}`,
-    { method: "POST" }
-  );
+  `https://ai-proctored-exam-backend.onrender.com/user-login?user_id=${username}&exam_id=${examId}`,
+  { method: "POST" }
+);
+
 
   window.location.href = "index.html";
 }
 </script>
-
 
 </body>
 </html>
