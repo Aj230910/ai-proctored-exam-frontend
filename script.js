@@ -21,6 +21,7 @@ const notification = document.getElementById("notification");
 const questionEl = document.querySelector(".question");
 const questionNoEl = document.getElementById("questionNo");
 const optionsEl = document.getElementById("options");
+const timerEl = document.getElementById("timer");
 
 /***********************
  * QUESTIONS (10 MCQs)
@@ -51,6 +52,9 @@ const MAX_TAB_SWITCH = 4;
 let violationLocked = false;
 let faceMissingCount = 0;
 
+let timeLeft = 60;
+let timerInterval;
+
 /***********************
  * INIT
  ***********************/
@@ -75,23 +79,21 @@ function loadQuestion() {
 
   optionsEl.innerHTML = "";
   q.options.forEach((opt, idx) => {
-    const checked = answers[currentQuestion] === idx ? "checked" : "";
+    const selected = answers[currentQuestion] === idx ? "selected" : "";
     optionsEl.innerHTML += `
-      <label class="option">
-        <input type="radio" name="mcq" ${checked}
-          onclick="selectOption(${idx})">
+      <div class="option ${selected}" onclick="selectOption(${idx})">
         ${opt}
-      </label>
+      </div>
     `;
   });
 
-  const nextBtn = document.getElementById("nextBtn");
-  nextBtn.innerText =
+  document.getElementById("nextBtn").innerText =
     currentQuestion === questions.length - 1 ? "Submit" : "Next";
 }
 
 function selectOption(i) {
   answers[currentQuestion] = i;
+  loadQuestion(); // re-render to apply selected class
 }
 
 function nextQuestion() {
@@ -114,7 +116,9 @@ function prevQuestion() {
  * FULLSCREEN
  ***********************/
 function enterFullscreen() {
-  document.documentElement.requestFullscreen?.();
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
 }
 
 /***********************
@@ -134,17 +138,35 @@ async function startExam() {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
 
+  startTimer();
   addTabSwitchListener();
   addFullscreenListener();
   startFaceDetection();
 }
 
 /***********************
+ * TIMER
+ ***********************/
+function startTimer() {
+  timerEl.innerText = timeLeft;
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerEl.innerText = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      submitExam();
+    }
+  }, 1000);
+}
+
+/***********************
  * SUBMIT + RESULT
  ***********************/
 function submitExam() {
-  let score = 0;
+  clearInterval(timerInterval);
 
+  let score = 0;
   let html = `
     <div style="max-width:900px;margin:auto;padding:30px;font-family:Segoe UI">
       <h1>Exam Result</h1>
@@ -177,16 +199,19 @@ function submitExam() {
     </div>
   `;
 
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(track => track.stop());
+  }
+
   document.body.innerHTML = html;
 
-  // 🔥 SAVE SCORE
   fetch(`${API}/submit-exam`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       user_id: USER_ID,
       exam_id: EXAM_ID,
-      score: score
+      score
     })
   });
 }
@@ -200,15 +225,12 @@ function exitExam() {
  * VIOLATIONS
  ***********************/
 function handleViolation(msg) {
-  if (violationLocked) return;
+  if (!started || violationLocked) return;
+
   violationLocked = true;
   setTimeout(() => violationLocked = false, 1000);
 
   tabSwitchCount++;
-  if (tabSwitchCount > MAX_TAB_SWITCH) {
-    terminateExam();
-    return;
-  }
 
   showNotification(`${msg} (${tabSwitchCount}/4)`);
 
@@ -222,12 +244,14 @@ function handleViolation(msg) {
       risk: 30
     })
   });
+
+  if (tabSwitchCount > MAX_TAB_SWITCH) {
+    terminateExam();
+  }
 }
 
 function addTabSwitchListener() {
   document.addEventListener("visibilitychange", () => {
-    if (!started) return;
-    if (Date.now() - examStartTime < 2000) return;
     if (document.visibilityState === "hidden") {
       handleViolation("Tab switch detected");
     }
@@ -236,7 +260,7 @@ function addTabSwitchListener() {
 
 function addFullscreenListener() {
   document.addEventListener("fullscreenchange", () => {
-    if (started && !document.fullscreenElement) {
+    if (!document.fullscreenElement) {
       handleViolation("Fullscreen exited");
     }
   });
@@ -254,13 +278,16 @@ function startFaceDetection() {
 
   fd.onResults(r => {
     if (!started) return;
+
     if (!r.detections || r.detections.length === 0) {
       faceMissingCount++;
       if (faceMissingCount >= 3) {
         handleViolation("Face not detected");
         faceMissingCount = 0;
       }
-    } else faceMissingCount = 0;
+    } else {
+      faceMissingCount = 0;
+    }
   });
 
   new Camera(video, {
@@ -274,6 +301,8 @@ function startFaceDetection() {
  * TERMINATE
  ***********************/
 function terminateExam() {
+  clearInterval(timerInterval);
+
   document.body.innerHTML = `
     <div style="
       height:100vh;
