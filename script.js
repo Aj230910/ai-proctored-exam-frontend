@@ -1,7 +1,7 @@
 /***********************
  * CONFIG
  ***********************/
-const API = "http://127.0.0.1:8000";
+const API = "https://ai-proctored-exam-backend.onrender.com";
 const USER_ID = localStorage.getItem("user_id");
 const EXAM_ID = localStorage.getItem("exam_id");
 
