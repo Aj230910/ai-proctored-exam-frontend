@@ -1,10 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Proctored Exam</title>
-
+  <meta name="description" content="AI powered proctored examination with real-time face detection and monitoring">
   <link rel="icon" href="https://img.icons8.com/?size=100&id=k3P7yoKUZXyJ&format=png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
 
   <!-- Login Guard -->
   <script>
@@ -19,173 +25,1668 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary: #1e40af;
+      --primary-light: #3b82f6;
+      --primary-dark: #1e3a8a;
+      --accent: #0891b2;
+      --bg-dark: #0a0e1a;
+      --bg-surface: rgba(255, 255, 255, 0.04);
+      --bg-card: rgba(255, 255, 255, 0.05);
+      --bg-card-hover: rgba(255, 255, 255, 0.08);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-active: rgba(30, 64, 175, 0.4);
+      --text: #e2e8f0;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+    }
 
     body {
-      margin: 0;
-      font-family: "Segoe UI", sans-serif;
-      background: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
+    /* Ambient Background */
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 0%, rgba(30, 64, 175, 0.2), transparent),
+        radial-gradient(ellipse 50% 30% at 80% 100%, rgba(8, 145, 178, 0.12), transparent);
+    }
+
+    /* ===== NAVBAR ===== */
     .navbar {
-      background: white;
-      padding: 14px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 11, 26, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 64px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      justify-content: space-between;
     }
 
-    .logo { font-weight: 600; font-size: 18px; }
-    .status-pill { color: #16a34a; font-size: 14px; }
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .nav-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-logo svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+
+    .nav-title {
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.3px;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .status-pill.active {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .status-pill.inactive {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: statusPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statusPulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    .user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e40af, #0e7490);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      text-transform: uppercase;
+    }
+
+    /* ===== MAIN LAYOUT ===== */
+    .main-content {
+      position: relative;
+      z-index: 1;
+      padding: 24px 28px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
 
     .layout {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 380px 1fr;
       gap: 24px;
-      padding: 24px;
+      align-items: start;
     }
 
-    .camera-card, .exam-card {
-      background: white;
-      border-radius: 18px;
+    /* ===== GLASS CARD ===== */
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      animation: cardSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-card:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    @keyframes cardSlideUp {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-header h3 .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(30, 64, 175, 0.12);
+      color: var(--primary-light);
+    }
+
+    .card-header h3 .icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .card-body {
       padding: 22px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    /* ===== CAMERA PANEL ===== */
+    .camera-panel {
+      position: sticky;
+      top: 88px;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #111;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 16px;
     }
 
     video {
       width: 100%;
-      height: 260px;
-      background: black;
-      border-radius: 12px;
-    }
-
-    .camera-label {
-      text-align: center;
-      margin-top: 8px;
-      font-size: 13px;
-      color: #64748b;
-    }
-
-    .exam-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .question {
-      font-size: 16px;
-      margin: 16px 0;
-      font-weight: 500;
-    }
-
-    .options-grid {
-      display: grid;
-      gap: 12px;
-    }
-
-    .option {
-      padding: 14px 16px;
+      height: 100%;
+      object-fit: cover;
       border-radius: 14px;
-      border: 2px solid #e5e7eb;
-      cursor: pointer;
-      transition: 0.2s;
-      font-size: 15px;
     }
 
-    .option:hover {
-      background: #eef2ff;
-      border-color: #6366f1;
+    .camera-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      pointer-events: none;
+      transition: border-color 0.3s;
     }
 
-    .option.selected {
-      background: #e0e7ff;
-      border-color: #4f46e5;
+    .camera-overlay.recording {
+      border-color: rgba(34, 197, 94, 0.5);
+      animation: recordBorder 2s ease-in-out infinite;
+    }
+
+    @keyframes recordBorder {
+
+      0%,
+      100% {
+        border-color: rgba(34, 197, 94, 0.5);
+      }
+
+      50% {
+        border-color: rgba(34, 197, 94, 0.2);
+      }
+    }
+
+    .camera-corner {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-color: var(--primary-light);
+      border-style: solid;
+    }
+
+    .camera-corner.tl {
+      top: 12px;
+      left: 12px;
+      border-width: 2px 0 0 2px;
+      border-radius: 4px 0 0 0;
+    }
+
+    .camera-corner.tr {
+      top: 12px;
+      right: 12px;
+      border-width: 2px 2px 0 0;
+      border-radius: 0 4px 0 0;
+    }
+
+    .camera-corner.bl {
+      bottom: 12px;
+      left: 12px;
+      border-width: 0 0 2px 2px;
+      border-radius: 0 0 0 4px;
+    }
+
+    .camera-corner.br {
+      bottom: 12px;
+      right: 12px;
+      border-width: 0 2px 2px 0;
+      border-radius: 0 0 4px 0;
+    }
+
+    .rec-indicator {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--danger);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .rec-indicator.active {
+      opacity: 1;
+    }
+
+    .rec-indicator .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--danger);
+      border-radius: 50%;
+      animation: recPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes recPulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    .camera-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .camera-stat {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+    }
+
+    .camera-stat .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .camera-stat .value {
+      font-size: 14px;
       font-weight: 600;
     }
 
-    .progress {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #64748b;
+    .camera-stat .value.good {
+      color: var(--success);
     }
 
+    .camera-stat .value.warn {
+      color: var(--warning);
+    }
+
+    .camera-stat .value.bad {
+      color: var(--danger);
+    }
+
+    /* ===== VIOLATION TRACKER ===== */
+    .violation-tracker {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+    }
+
+    .violation-tracker .tracker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .violation-tracker .tracker-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .violation-tracker .tracker-count {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .violation-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .violation-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), var(--warning));
+      border-radius: 3px;
+      transition: width 0.5s ease, background 0.5s;
+      width: 0%;
+    }
+
+    .violation-bar-fill.high {
+      background: linear-gradient(90deg, var(--warning), var(--danger));
+    }
+
+    /* ===== EXAM PANEL ===== */
+    .exam-header-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .question-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .question-num {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .question-total {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Timer */
+    .timer-widget {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-radius: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+    }
+
+    .timer-widget svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--text-muted);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .timer-value {
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.3px;
+    }
+
+    .timer-value.urgent {
+      color: var(--danger);
+      animation: timerUrgent 1s ease-in-out infinite;
+    }
+
+    @keyframes timerUrgent {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .timer-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Progress Bar */
+    .progress-bar-container {
+      margin-bottom: 28px;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .progress-info span {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 3px;
+      transition: width 0.4s ease;
+      width: 10%;
+    }
+
+    /* Question */
+    .question-text {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      color: var(--text);
+    }
+
+    /* Options */
+    .options-grid {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .option {
+      padding: 16px 20px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: var(--bg-surface);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .option::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(30, 64, 175, 0.08), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .option:hover {
+      border-color: rgba(30, 64, 175, 0.35);
+      background: var(--bg-card-hover);
+      transform: translateX(4px);
+    }
+
+    .option:hover::before {
+      opacity: 1;
+    }
+
+    .option-letter {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: all 0.25s;
+      position: relative;
+      z-index: 1;
+    }
+
+    .option-text {
+      position: relative;
+      z-index: 1;
+      font-weight: 500;
+    }
+
+    .option.selected {
+      border-color: var(--primary);
+      background: rgba(30, 64, 175, 0.12);
+    }
+
+    .option.selected .option-letter {
+      background: var(--primary);
+      color: white;
+    }
+
+    .option.selected .option-text {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Footer Actions */
     .exam-footer {
-      margin-top: 22px;
       display: flex;
       gap: 12px;
     }
 
-    button {
-      padding: 12px;
-      border-radius: 12px;
+    .btn {
+      flex: 1;
+      padding: 14px 20px;
+      border-radius: 14px;
       border: none;
       cursor: pointer;
       font-size: 14px;
-      flex: 1;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
-    .primary {
-      background: linear-gradient(135deg, #4f46e5, #6366f1);
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: white;
+      border: none;
+      position: relative;
+      overflow: hidden;
     }
 
-    .notification {
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(30, 64, 175, 0.4);
+    }
+
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+
+    .btn-primary:hover::after {
+      transform: translateX(100%);
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, var(--success), #16a34a);
+      color: white;
+      border: none;
+    }
+
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(34, 197, 94, 0.35);
+    }
+
+    /* ===== NOTIFICATION TOAST ===== */
+    .notification-toast {
       position: fixed;
       top: 80px;
-      right: 20px;
-      background: #fee2e2;
-      color: #991b1b;
-      padding: 12px 16px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-      z-index: 999;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
     }
 
-    .hidden { display: none; }
+    .toast-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-radius: 14px;
+      background: var(--danger-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      transform: translateX(120%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
 
+    .toast-item.show {
+      transform: translateX(0);
+    }
+
+    .toast-item svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--danger);
+      fill: none;
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+
+    /* ===== START OVERLAY ===== */
+    .start-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(11, 11, 26, 0.9);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .start-overlay.hidden {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .start-card {
+      text-align: center;
+      max-width: 480px;
+      padding: 48px 40px;
+      background: var(--bg-card);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      animation: startCardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes startCardIn {
+      0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .start-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 50px rgba(30, 64, 175, 0.35);
+    }
+
+    .start-icon svg {
+      width: 40px;
+      height: 40px;
+      fill: white;
+    }
+
+    .start-card h2 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .start-card .desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .start-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .start-info-item {
+      padding: 14px;
+      border-radius: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+    }
+
+    .start-info-item .val {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary-light);
+    }
+
+    .start-info-item .lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    .start-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(30, 64, 175, 0.45);
+    }
+
+    .start-note {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ===== RESPONSIVE ===== */
     @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; }
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .camera-panel {
+        position: static;
+      }
+
+      .navbar {
+        padding: 0 16px;
+      }
+
+      .main-content {
+        padding: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .start-info {
+        grid-template-columns: 1fr;
+      }
+
+      .start-card {
+        padding: 32px 24px;
+        border-radius: 20px;
+      }
+
+      .exam-footer {
+        flex-direction: column;
+      }
+    }
+
+    /* Hidden utility */
+    .hidden {
+      display: none !important;
     }
   </style>
 </head>
 
 <body>
 
-<header class="navbar">
-  <div class="logo">AI Proctored Exam</div>
-  <div class="status-pill">● Monitoring Active</div>
-</header>
+  <div class="ambient-bg"></div>
 
-<div id="notification" class="notification hidden"></div>
-
-<main class="layout">
-
-  <section class="camera-card">
-    <video id="video" autoplay muted></video>
-    <span class="camera-label">Live Camera</span>
-  </section>
-
-  <section class="exam-card">
-    <div class="exam-header">
-      <h3 id="questionNo">Question 1</h3>
-      <div class="timer">⏱ <b id="timer">60</b>s</div>
+  <!-- ===== NAVBAR ===== -->
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="nav-logo">
+        <svg viewBox="0 0 24 24" fill="white">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+        </svg>
+      </div>
+      <span class="nav-title">AI Proctored Exam</span>
     </div>
 
-    <p class="question"></p>
-    <div id="options" class="options-grid"></div>
-
-    
-
-    <div class="exam-footer">
-      <button onclick="prevQuestion()">Previous</button>
-      <button id="nextBtn" onclick="nextQuestion()">Next</button>
-      <button class="primary" onclick="startExam()">Start Exam</button>
+    <div class="nav-right">
+      <div id="statusPill" class="status-pill inactive">
+        <span class="status-dot"></span>
+        <span id="statusText">Waiting</span>
+      </div>
+      <div id="userAvatar" class="user-avatar"></div>
     </div>
-  </section>
+  </header>
 
-</main>
+  <!-- ===== NOTIFICATION AREA ===== -->
+  <div id="notificationArea" class="notification-toast"></div>
 
-<script src="script.js"></script>
+  <!-- ===== START OVERLAY ===== -->
+  <div id="startOverlay" class="start-overlay">
+    <div class="start-card">
+      <div class="start-icon">
+        <svg viewBox="0 0 24 24" fill="white">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+        </svg>
+      </div>
+      <h2>Ready to Begin?</h2>
+      <p class="desc">Your exam will begin in fullscreen mode with AI proctoring. Make sure your camera is enabled and
+        you are in a well-lit environment.</p>
+
+      <div class="start-info">
+        <div class="start-info-item">
+          <div class="val">10</div>
+          <div class="lbl">Questions</div>
+        </div>
+        <div class="start-info-item">
+          <div class="val">60s</div>
+          <div class="lbl">Duration</div>
+        </div>
+        <div class="start-info-item">
+          <div class="val">4</div>
+          <div class="lbl">Max Warnings</div>
+        </div>
+      </div>
+
+      <button class="start-btn" onclick="startExam()">
+        Start Exam
+      </button>
+      <p class="start-note">By starting, you agree to AI-based proctoring and monitoring.</p>
+    </div>
+  </div>
+
+  <!-- ===== MAIN LAYOUT ===== -->
+  <main class="main-content">
+    <div class="layout">
+
+      <!-- CAMERA PANEL -->
+      <aside class="camera-panel">
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M23 7l-7 5 7 5V7z" />
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                </svg>
+              </span>
+              Live Camera
+            </h3>
+            <div id="recIndicatorSmall" class="status-pill inactive" style="padding: 4px 10px; font-size: 11px;">
+              <span class="status-dot"></span>
+              OFF
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="video-container">
+              <video id="video" autoplay muted playsinline></video>
+              <div id="cameraOverlay" class="camera-overlay"></div>
+              <div class="camera-corner tl"></div>
+              <div class="camera-corner tr"></div>
+              <div class="camera-corner bl"></div>
+              <div class="camera-corner br"></div>
+              <div id="recIndicator" class="rec-indicator">
+                <span class="dot"></span>
+                REC
+              </div>
+            </div>
+
+            <div class="camera-info">
+              <div class="camera-stat">
+                <div class="label">Face</div>
+                <div id="faceStatus" class="value warn">Waiting</div>
+              </div>
+              <div class="camera-stat">
+                <div class="label">Status</div>
+                <div id="cameraStatus" class="value warn">Ready</div>
+              </div>
+            </div>
+
+            <div class="violation-tracker">
+              <div class="tracker-header">
+                <span class="tracker-label">Violations</span>
+                <span id="violationCount" class="tracker-count" style="color: var(--success);">0 / 4</span>
+              </div>
+              <div class="violation-bar">
+                <div id="violationFill" class="violation-bar-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- EXAM PANEL -->
+      <section class="glass-card">
+        <div class="card-header">
+          <h3>
+            <span class="icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+            </span>
+            Examination
+          </h3>
+          <div class="timer-widget">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <div>
+              <div id="timer" class="timer-value">60</div>
+            </div>
+            <span class="timer-label">sec</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Header -->
+          <div class="exam-header-info">
+            <div class="question-badge">
+              <span id="questionNo" class="question-num">Question 1</span>
+              <span id="questionTotal" class="question-total">of 10</span>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div class="progress-bar-container">
+            <div class="progress-info">
+              <span>Progress</span>
+              <span id="progressPercent">10%</span>
+            </div>
+            <div class="progress-track">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <!-- Question -->
+          <p id="questionText" class="question-text"></p>
+
+          <!-- Options -->
+          <div id="options" class="options-grid"></div>
+
+          <!-- Actions -->
+          <div class="exam-footer">
+            <button class="btn btn-secondary" onclick="prevQuestion()">
+              <svg viewBox="0 0 24 24">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Previous
+            </button>
+            <button id="nextBtn" class="btn btn-primary" onclick="nextQuestion()">
+              Next
+              <svg viewBox="0 0 24 24">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    /***********************
+     * CONFIG
+     ***********************/
+    const API = "https://ai-proctored-exam-backend.onrender.com";
+    const USER_ID = localStorage.getItem("user_id");
+    const EXAM_ID = localStorage.getItem("exam_id");
+
+    /***********************
+     * LOGIN GUARD
+     ***********************/
+    if (!USER_ID || !EXAM_ID) {
+      localStorage.clear();
+      window.location.replace("login.html");
+    }
+
+    // Set user avatar initials
+    document.getElementById("userAvatar").textContent = USER_ID.charAt(0);
+
+    /***********************
+     * ELEMENTS
+     ***********************/
+    const video = document.getElementById("video");
+    const questionTextEl = document.getElementById("questionText");
+    const questionNoEl = document.getElementById("questionNo");
+    const questionTotalEl = document.getElementById("questionTotal");
+    const optionsEl = document.getElementById("options");
+    const timerEl = document.getElementById("timer");
+    const progressFill = document.getElementById("progressFill");
+    const progressPercent = document.getElementById("progressPercent");
+
+    /***********************
+     * QUESTIONS (10 MCQs)
+     ***********************/
+    const questions = [
+      { q: "What is Artificial Intelligence?", options: ["DBMS", "Making machines intelligent", "OS", "Compiler"], correct: 1 },
+      { q: "Machine Learning is a subset of?", options: ["AI", "CN", "OS", "DBMS"], correct: 0 },
+      { q: "Supervised learning uses?", options: ["Unlabeled data", "Random data", "Labeled data", "No data"], correct: 2 },
+      { q: "Which language is popular for AI?", options: ["HTML", "CSS", "Python", "SQL"], correct: 2 },
+      { q: "Neural Networks are inspired by?", options: ["CPU", "Human Brain", "RAM", "Hard Disk"], correct: 1 },
+      { q: "Which is NOT an AI application?", options: ["Chatbot", "Face recognition", "Calculator", "Self-driving car"], correct: 2 },
+      { q: "Deep Learning uses?", options: ["No layers", "Single layer", "Multiple layers", "Files"], correct: 2 },
+      { q: "Which algorithm is classification?", options: ["KNN", "Apriori", "K-Means", "PCA"], correct: 0 },
+      { q: "Which is unsupervised learning?", options: ["Linear regression", "Decision tree", "K-Means", "Logistic regression"], correct: 2 },
+      { q: "Main goal of AI is?", options: ["Store data", "Mimic human intelligence", "Compile code", "Print output"], correct: 1 }
+    ];
+
+    let currentQuestion = 0;
+    const answers = {};
+
+    const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
+
+    /***********************
+     * STATE
+     ***********************/
+    let started = false;
+    let examStartTime = 0;
+    let tabSwitchCount = 0;
+    const MAX_TAB_SWITCH = 4;
+    let violationLocked = false;
+    let faceMissingCount = 0;
+
+    let timeLeft = 60;
+    let timerInterval;
+
+    /***********************
+     * INIT
+     ***********************/
+    loadQuestion();
+
+    /***********************
+     * UI HELPERS
+     ***********************/
+    function showNotification(msg) {
+      const area = document.getElementById("notificationArea");
+      const toast = document.createElement("div");
+      toast.className = "toast-item";
+      toast.innerHTML = `
+    <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span>${msg}</span>
+  `;
+      area.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.add("show");
+      });
+
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 400);
+      }, 3500);
+    }
+
+    function updateViolationUI() {
+      const fill = document.getElementById("violationFill");
+      const count = document.getElementById("violationCount");
+      const pct = (tabSwitchCount / MAX_TAB_SWITCH) * 100;
+      fill.style.width = Math.min(pct, 100) + '%';
+      count.textContent = `${tabSwitchCount} / ${MAX_TAB_SWITCH}`;
+
+      if (pct >= 75) {
+        fill.classList.add('high');
+        count.style.color = 'var(--danger)';
+      } else if (pct >= 50) {
+        count.style.color = 'var(--warning)';
+      }
+    }
+
+    /***********************
+     * QUESTION RENDER
+     ***********************/
+    function loadQuestion() {
+      const q = questions[currentQuestion];
+      questionNoEl.textContent = `Question ${currentQuestion + 1}`;
+      questionTotalEl.textContent = `of ${questions.length}`;
+      questionTextEl.textContent = q.q;
+
+      // Progress
+      const pct = Math.round(((currentQuestion + 1) / questions.length) * 100);
+      progressFill.style.width = pct + '%';
+      progressPercent.textContent = pct + '%';
+
+      optionsEl.innerHTML = "";
+      q.options.forEach((opt, idx) => {
+        const selected = answers[currentQuestion] === idx ? "selected" : "";
+        optionsEl.innerHTML += `
+      <div class="option ${selected}" onclick="selectOption(${idx})">
+        <span class="option-letter">${OPTION_LETTERS[idx]}</span>
+        <span class="option-text">${opt}</span>
+      </div>
+    `;
+      });
+
+      const nextBtn = document.getElementById("nextBtn");
+      if (currentQuestion === questions.length - 1) {
+        nextBtn.innerHTML = `Submit <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
+      } else {
+        nextBtn.innerHTML = `Next <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+      }
+    }
+
+    function selectOption(i) {
+      answers[currentQuestion] = i;
+      loadQuestion();
+    }
+
+    function nextQuestion() {
+      if (currentQuestion === questions.length - 1) {
+        submitExam();
+        return;
+      }
+      currentQuestion++;
+      loadQuestion();
+    }
+
+    function prevQuestion() {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        loadQuestion();
+      }
+    }
+
+    /***********************
+     * FULLSCREEN
+     ***********************/
+    function enterFullscreen() {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => { });
+      }
+    }
+
+    /***********************
+     * START EXAM
+     ***********************/
+    async function startExam() {
+      if (started) return;
+      started = true;
+      examStartTime = Date.now();
+
+      // Hide overlay
+      document.getElementById("startOverlay").classList.add("hidden");
+
+      // Update status
+      const pill = document.getElementById("statusPill");
+      pill.className = "status-pill active";
+      document.getElementById("statusText").textContent = "Monitoring";
+
+      enterFullscreen();
+
+      await fetch(`${API}/start-exam?user_id=${USER_ID}&exam_id=${EXAM_ID}`, { method: "POST" });
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+
+      // Camera UI updates
+      document.getElementById("cameraOverlay").classList.add("recording");
+      document.getElementById("recIndicator").classList.add("active");
+      const recSmall = document.getElementById("recIndicatorSmall");
+      recSmall.className = "status-pill active";
+      recSmall.style.padding = "4px 10px";
+      recSmall.style.fontSize = "11px";
+      recSmall.innerHTML = '<span class="status-dot"></span> LIVE';
+      document.getElementById("cameraStatus").textContent = "Active";
+      document.getElementById("cameraStatus").className = "value good";
+      document.getElementById("faceStatus").textContent = "Detecting...";
+
+      startTimer();
+      addTabSwitchListener();
+      addFullscreenListener();
+      startFaceDetection();
+    }
+
+    /***********************
+     * TIMER
+     ***********************/
+    function startTimer() {
+      timerEl.innerText = timeLeft;
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = timeLeft;
+
+        if (timeLeft <= 10) {
+          timerEl.classList.add("urgent");
+        }
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          submitExam();
+        }
+      }, 1000);
+    }
+
+    /***********************
+     * SUBMIT + RESULT
+     ***********************/
+    function submitExam() {
+      clearInterval(timerInterval);
+
+      let score = 0;
+      let resultItems = '';
+
+      questions.forEach((q, i) => {
+        const ua = answers[i];
+        const isCorrect = ua === q.correct;
+        if (isCorrect) score++;
+
+        const statusIcon = isCorrect
+          ? '<svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#22c55e;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg>'
+          : '<svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#ef4444;fill:none;stroke-width:2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+        resultItems += `
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;">
+          <span style="font-size:13px;color:#64748b;font-weight:600;">Question ${i + 1}</span>
+          ${statusIcon}
+        </div>
+        <p style="font-size:15px;font-weight:600;margin-bottom:12px;color:#f1f5f9;line-height:1.5;">${q.q}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span style="padding:6px 14px;border-radius:10px;font-size:13px;font-weight:500;
+            background:${ua !== undefined ? (isCorrect ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.06)'};
+            color:${ua !== undefined ? (isCorrect ? '#22c55e' : '#fca5a5') : '#64748b'};
+            border:1px solid ${ua !== undefined ? (isCorrect ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)') : 'rgba(255,255,255,0.08)'};">
+            Your: ${ua !== undefined ? q.options[ua] : 'Not Answered'}
+          </span>
+          ${!isCorrect ? `<span style="padding:6px 14px;border-radius:10px;font-size:13px;font-weight:500;background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.2);">
+            Correct: ${q.options[q.correct]}
+          </span>` : ''}
+        </div>
+      </div>
+    `;
+      });
+
+      const pct = Math.round((score / questions.length) * 100);
+      const grade = pct >= 80 ? 'Excellent' : pct >= 60 ? 'Good' : pct >= 40 ? 'Average' : 'Needs Improvement';
+      const gradeColor = pct >= 80 ? '#22c55e' : pct >= 60 ? '#06b6d4' : pct >= 40 ? '#f59e0b' : '#ef4444';
+
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+      }
+
+      document.body.innerHTML = `
+    <div style="
+      min-height:100vh;
+      background:#0b0b1a;
+      font-family:'Inter',sans-serif;
+      color:#f1f5f9;
+      padding:40px 20px;
+    ">
+      <div style="
+        max-width:700px;
+        margin:0 auto;
+      ">
+        <!-- Score Header -->
+        <div style="
+          text-align:center;
+          padding:48px 32px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.08);
+          border-radius:24px;
+          margin-bottom:28px;
+          position:relative;
+          overflow:hidden;
+        ">
+          <div style="
+            position:absolute;top:0;left:0;right:0;height:1px;
+            background:linear-gradient(90deg,transparent,rgba(99,102,241,0.5),rgba(6,182,212,0.5),transparent);
+          "></div>
+          <div style="
+            width:100px;height:100px;margin:0 auto 20px;
+            border-radius:50%;
+            border:4px solid ${gradeColor};
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 0 40px ${gradeColor}30;
+            font-size:32px;font-weight:800;
+          ">${pct}%</div>
+          <h1 style="font-size:28px;font-weight:700;margin-bottom:6px;letter-spacing:-0.5px;">Exam Complete</h1>
+          <p style="color:${gradeColor};font-size:16px;font-weight:600;margin-bottom:4px;">${grade}</p>
+          <p style="color:#64748b;font-size:14px;">Score: ${score} / ${questions.length}</p>
+        </div>
+
+        <!-- Stats -->
+        <div style="
+          display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px;
+        ">
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;text-align:center;">
+            <div style="font-size:24px;font-weight:700;color:#22c55e;">${score}</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;">Correct</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;text-align:center;">
+            <div style="font-size:24px;font-weight:700;color:#ef4444;">${questions.length - score}</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;">Wrong</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;text-align:center;">
+            <div style="font-size:24px;font-weight:700;color:#f59e0b;">${tabSwitchCount}</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;">Violations</div>
+          </div>
+        </div>
+
+        <!-- Question Details -->
+        <h2 style="font-size:18px;font-weight:600;margin-bottom:16px;">Detailed Results</h2>
+        ${resultItems}
+
+        <!-- Exit -->
+        <button onclick="exitExam()" style="
+          width:100%;
+          margin-top:20px;
+          padding:16px;
+          border:none;
+          border-radius:14px;
+          background:linear-gradient(135deg,#ef4444,#dc2626);
+          color:white;
+          font-size:15px;
+          font-weight:600;
+          font-family:'Inter',sans-serif;
+          cursor:pointer;
+          transition:all 0.3s;
+        ">
+          Exit Exam
+        </button>
+      </div>
+    </div>
+  `;
+
+      fetch(`${API}/submit-exam`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: USER_ID, exam_id: EXAM_ID, score })
+      });
+    }
+
+    function exitExam() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    /***********************
+     * VIOLATIONS
+     ***********************/
+    function handleViolation(msg) {
+      if (!started || violationLocked) return;
+
+      violationLocked = true;
+      setTimeout(() => violationLocked = false, 1000);
+
+      tabSwitchCount++;
+      showNotification(`⚠️ ${msg} (${tabSwitchCount}/${MAX_TAB_SWITCH})`);
+      updateViolationUI();
+
+      fetch(`${API}/violation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: USER_ID,
+          exam_id: EXAM_ID,
+          event_type: msg,
+          risk: 30
+        })
+      });
+
+      if (tabSwitchCount > MAX_TAB_SWITCH) {
+        terminateExam();
+      }
+    }
+
+    function addTabSwitchListener() {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+          handleViolation("Tab switch detected");
+        }
+      });
+    }
+
+    function addFullscreenListener() {
+      document.addEventListener("fullscreenchange", () => {
+        if (!document.fullscreenElement) {
+          handleViolation("Fullscreen exited");
+        }
+      });
+    }
+
+    /***********************
+     * FACE DETECTION
+     ***********************/
+    function startFaceDetection() {
+      const fd = new FaceDetection({
+        locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}`
+      });
+
+      fd.setOptions({ model: "short", minDetectionConfidence: 0.6 });
+
+      fd.onResults(r => {
+        if (!started) return;
+
+        const faceEl = document.getElementById("faceStatus");
+        if (!r.detections || r.detections.length === 0) {
+          faceMissingCount++;
+          if (faceEl) {
+            faceEl.textContent = "Not Found";
+            faceEl.className = "value bad";
+          }
+          if (faceMissingCount >= 3) {
+            handleViolation("Face not detected");
+            faceMissingCount = 0;
+          }
+        } else {
+          faceMissingCount = 0;
+          if (faceEl) {
+            faceEl.textContent = "Detected";
+            faceEl.className = "value good";
+          }
+        }
+      });
+
+      new Camera(video, {
+        onFrame: async () => fd.send({ image: video }),
+        width: 640,
+        height: 480
+      }).start();
+    }
+
+    /***********************
+     * TERMINATE
+     ***********************/
+    function terminateExam() {
+      clearInterval(timerInterval);
+
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+      }
+
+      document.body.innerHTML = `
+    <div style="
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      flex-direction:column;
+      background:#0b0b1a;
+      font-family:'Inter',sans-serif;
+      color:#f1f5f9;
+      text-align:center;
+      padding:20px;
+    ">
+      <div style="
+        width:80px;height:80px;
+        border-radius:50%;
+        background:rgba(239,68,68,0.15);
+        display:flex;align-items:center;justify-content:center;
+        margin-bottom:24px;
+        box-shadow:0 0 50px rgba(239,68,68,0.2);
+      ">
+        <svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:#ef4444;fill:none;stroke-width:2">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <h1 style="font-size:32px;font-weight:700;margin-bottom:8px;letter-spacing:-0.5px;">Exam Terminated</h1>
+      <p style="color:#94a3b8;font-size:16px;max-width:400px;line-height:1.6;">
+        Your exam has been terminated due to exceeding the maximum number of violations. Please contact your administrator.
+      </p>
+      <button onclick="exitExam()" style="
+        margin-top:32px;
+        padding:14px 32px;
+        border:none;
+        border-radius:14px;
+        background:rgba(255,255,255,0.06);
+        color:#f1f5f9;
+        font-size:15px;
+        font-weight:500;
+        font-family:'Inter',sans-serif;
+        cursor:pointer;
+        border:1px solid rgba(255,255,255,0.1);
+      ">Return to Login</button>
+    </div>
+  `;
+    }
+  </script>
 </body>
+
 </html>

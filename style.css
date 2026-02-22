@@ -1,80 +1,70 @@
-body {
+/* ===== AI Proctored Exam - Global Styles ===== */
+/* Inter font from Google Fonts is loaded in each HTML file */
+
+:root {
+  --primary: #1e40af;
+  --primary-light: #3b82f6;
+  --primary-dark: #1e3a8a;
+  --accent: #0891b2;
+  --bg-dark: #0a0e1a;
+  --bg-surface: rgba(255, 255, 255, 0.04);
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e2e8f0;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
   margin: 0;
-  font-family: Segoe UI, sans-serif;
-  background: #f8fafc;
+  padding: 0;
 }
 
-.navbar {
-  background: white;
-  padding: 14px 24px;
-  display: flex;
-  justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+body {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.logo {
-  font-weight: bold;
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
 }
 
-.status-pill {
-  color: green;
-  font-size: 14px;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.layout {
-  display: flex;
-  gap: 20px;
-  padding: 20px;
+::-webkit-scrollbar-thumb {
+  background: rgba(30, 64, 175, 0.3);
+  border-radius: 3px;
 }
 
-.camera-card, .exam-card {
-  background: white;
-  border-radius: 14px;
-  padding: 20px;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.4);
 }
 
-.camera-card {
-  width: 40%;
-}
-
-.exam-card {
-  width: 60%;
-}
-
-video {
-  width: 100%;
-  border-radius: 12px;
-}
-
-.exam-footer {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-button {
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-}
-
-button.primary {
-  background: #4f46e5;
+/* Selection */
+::selection {
+  background: rgba(30, 64, 175, 0.3);
   color: white;
 }
 
-.notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #fee2e2;
-  color: #991b1b;
-  padding: 12px 16px;
-  border-radius: 10px;
+/* Focus Visible */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
+/* Utility */
 .hidden {
-  display: none;
+  display: none !important;
 }
